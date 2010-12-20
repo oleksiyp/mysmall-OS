@@ -1,0 +1,9 @@
+[
+uuid(18cda21f-8858-4eb3-90da-ad22f951792c),
+version(1.0)
+]
+interface TestServer
+{
+	void HelloWorld(short data);
+	void Shutdown();
+}

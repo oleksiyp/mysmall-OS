@@ -1,0 +1,341 @@
+[
+uuid(afa74268-5823-47d5-adc7-a6e873f74818),
+version(1.0)
+]
+interface RemoteDebuggerServer
+{
+	typedef unsigned long       DWORD, *LPDWORD;
+	typedef int                 BOOL, *LPBOOL;
+	typedef unsigned char       BYTE, *LPBYTE;
+	typedef unsigned short      WORD, *UINT_PTR;
+
+	typedef DWORD LPVOID;
+	typedef DWORD HANDLE;
+	typedef [string] char *LPSTR;
+	typedef [string] const char *LPCSTR;
+
+	typedef struct _SECURITY_ATTRIBUTES {
+		DWORD nLength;
+		LPVOID lpSecurityDescriptor;
+		BOOL bInheritHandle;
+	} SECURITY_ATTRIBUTES, *PSECURITY_ATTRIBUTES, *LPSECURITY_ATTRIBUTES;
+
+	typedef struct _STARTUPINFOA {
+		DWORD   cb;
+		LPSTR   lpReserved;
+		LPSTR   lpDesktop;
+		LPSTR   lpTitle;
+		DWORD   dwX;
+		DWORD   dwY;
+		DWORD   dwXSize;
+		DWORD   dwYSize;
+		DWORD   dwXCountChars;
+		DWORD   dwYCountChars;
+		DWORD   dwFillAttribute;
+		DWORD   dwFlags;
+		WORD    wShowWindow;
+		WORD    cbReserved2;
+		LPBYTE  lpReserved2;
+		HANDLE  hStdInput;
+		HANDLE  hStdOutput;
+		HANDLE  hStdError;
+	} STARTUPINFOA, *LPSTARTUPINFOA;
+
+	typedef struct _PROCESS_INFORMATION {
+		HANDLE hProcess;
+		HANDLE hThread;
+		DWORD dwProcessId;
+		DWORD dwThreadId;
+	} PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
+
+	#define MAXIMUM_SUPPORTED_EXTENSION     512
+	#define SIZE_OF_80387_REGISTERS      80
+
+	typedef struct _FLOATING_SAVE_AREA {
+		DWORD   ControlWord;
+		DWORD   StatusWord;
+		DWORD   TagWord;
+		DWORD   ErrorOffset;
+		DWORD   ErrorSelector;
+		DWORD   DataOffset;
+		DWORD   DataSelector;
+		BYTE    RegisterArea[SIZE_OF_80387_REGISTERS];
+		DWORD   Cr0NpxState;
+	} FLOATING_SAVE_AREA;
+
+
+	typedef struct _CONTEXT {
+
+		//
+		// The flags values within this flag control the contents of
+		// a CONTEXT record.
+		//
+		// If the context record is used as an input parameter, then
+		// for each portion of the context record controlled by a flag
+		// whose value is set, it is assumed that that portion of the
+		// context record contains valid context. If the context record
+		// is being used to modify a threads context, then only that
+		// portion of the threads context will be modified.
+		//
+		// If the context record is used as an IN OUT parameter to capture
+		// the context of a thread, then only those portions of the thread's
+		// context corresponding to set flags will be returned.
+		//
+		// The context record is never used as an OUT only parameter.
+		//
+
+		DWORD ContextFlags;
+
+		//
+		// This section is specified/returned if CONTEXT_DEBUG_REGISTERS is
+		// set in ContextFlags.  Note that CONTEXT_DEBUG_REGISTERS is NOT
+		// included in CONTEXT_FULL.
+		//
+
+		DWORD   Dr0;
+		DWORD   Dr1;
+		DWORD   Dr2;
+		DWORD   Dr3;
+		DWORD   Dr6;
+		DWORD   Dr7;
+
+		//
+		// This section is specified/returned if the
+		// ContextFlags word contians the flag CONTEXT_FLOATING_POINT.
+		//
+
+		FLOATING_SAVE_AREA FloatSave;
+
+		//
+		// This section is specified/returned if the
+		// ContextFlags word contians the flag CONTEXT_SEGMENTS.
+		//
+
+		DWORD   SegGs;
+		DWORD   SegFs;
+		DWORD   SegEs;
+		DWORD   SegDs;
+
+		//
+		// This section is specified/returned if the
+		// ContextFlags word contians the flag CONTEXT_INTEGER.
+		//
+
+		DWORD   Edi;
+		DWORD   Esi;
+		DWORD   Ebx;
+		DWORD   Edx;
+		DWORD   Ecx;
+		DWORD   Eax;
+
+		//
+		// This section is specified/returned if the
+		// ContextFlags word contians the flag CONTEXT_CONTROL.
+		//
+
+		DWORD   Ebp;
+		DWORD   Eip;
+		DWORD   SegCs;              // MUST BE SANITIZED
+		DWORD   EFlags;             // MUST BE SANITIZED
+		DWORD   Esp;
+		DWORD   SegSs;
+
+		//
+		// This section is specified/returned if the ContextFlags word
+		// contains the flag CONTEXT_EXTENDED_REGISTERS.
+		// The format and contexts are processor specific
+		//
+
+		BYTE    ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
+
+	} CONTEXT, *LPCONTEXT;
+
+	typedef struct _LDT_ENTRY {
+		WORD    LimitLow;
+		WORD    BaseLow;
+		DWORD   Flags;
+	/*    union {
+			struct {
+				BYTE    BaseMid;
+				BYTE    Flags1;     // Declare as bytes to avoid alignment
+				BYTE    Flags2;     // Problems.
+				BYTE    BaseHi;
+			} Bytes;
+			struct {
+				DWORD   BaseMid : 8;
+				DWORD   Type : 5;
+				DWORD   Dpl : 2;
+				DWORD   Pres : 1;
+				DWORD   LimitHi : 4;
+				DWORD   Sys : 1;
+				DWORD   Reserved_0 : 1;
+				DWORD   Default_Big : 1;
+				DWORD   Granularity : 1;
+				DWORD   BaseHi : 8;
+			} Bits;
+		} HighWord;*/
+	} LDT_ENTRY, *LPLDT_ENTRY;
+
+
+	#define EXCEPTION_DEBUG_EVENT       1
+	#define CREATE_THREAD_DEBUG_EVENT   2
+	#define CREATE_PROCESS_DEBUG_EVENT  3
+	#define EXIT_THREAD_DEBUG_EVENT     4
+	#define EXIT_PROCESS_DEBUG_EVENT    5
+	#define LOAD_DLL_DEBUG_EVENT        6
+	#define UNLOAD_DLL_DEBUG_EVENT      7
+	#define OUTPUT_DEBUG_STRING_EVENT   8
+	#define RIP_EVENT                   9
+
+
+	#define EXCEPTION_NONCONTINUABLE 0x1    // Noncontinuable exception
+	#define EXCEPTION_MAXIMUM_PARAMETERS 15 // maximum number of exception parameters
+
+	typedef struct _EXCEPTION_RECORD {
+		DWORD ExceptionCode;
+		DWORD ExceptionFlags;
+		[ptr] struct _EXCEPTION_RECORD *ExceptionRecord;
+		LPVOID ExceptionAddress;
+		DWORD NumberParameters;
+		UINT_PTR ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
+	} EXCEPTION_RECORD;
+
+	typedef struct _EXCEPTION_DEBUG_INFO {
+		EXCEPTION_RECORD ExceptionRecord;
+		DWORD dwFirstChance;
+	} EXCEPTION_DEBUG_INFO;
+
+	typedef LPVOID LPTHREAD_START_ROUTINE;
+
+	typedef struct _CREATE_THREAD_DEBUG_INFO {
+		HANDLE hThread;
+		LPVOID lpThreadLocalBase;
+		LPTHREAD_START_ROUTINE lpStartAddress;
+	} CREATE_THREAD_DEBUG_INFO;
+
+	typedef struct _CREATE_PROCESS_DEBUG_INFO {
+		HANDLE hFile;
+		HANDLE hProcess;
+		HANDLE hThread;
+		LPVOID lpBaseOfImage;
+		DWORD dwDebugInfoFileOffset;
+		DWORD nDebugInfoSize;
+		LPVOID lpThreadLocalBase;
+		LPTHREAD_START_ROUTINE lpStartAddress;
+		LPVOID lpImageName;
+		WORD fUnicode;
+	} CREATE_PROCESS_DEBUG_INFO;
+
+	typedef struct _EXIT_THREAD_DEBUG_INFO {
+		DWORD dwExitCode;
+	} EXIT_THREAD_DEBUG_INFO;
+
+	typedef struct _EXIT_PROCESS_DEBUG_INFO {
+		DWORD dwExitCode;
+	} EXIT_PROCESS_DEBUG_INFO;
+
+	typedef struct _LOAD_DLL_DEBUG_INFO {
+		HANDLE hFile;
+		LPVOID lpBaseOfDll;
+		DWORD dwDebugInfoFileOffset;
+		DWORD nDebugInfoSize;
+		LPVOID lpImageName;
+		WORD fUnicode;
+	} LOAD_DLL_DEBUG_INFO;
+
+	typedef struct _UNLOAD_DLL_DEBUG_INFO {
+		LPVOID lpBaseOfDll;
+	} UNLOAD_DLL_DEBUG_INFO;
+
+	typedef struct _OUTPUT_DEBUG_STRING_INFO {
+		LPSTR lpDebugStringData;
+		WORD fUnicode;
+		WORD nDebugStringLength;
+	} OUTPUT_DEBUG_STRING_INFO;
+
+	typedef struct _RIP_INFO {
+		DWORD dwError;
+		DWORD dwType;
+	} RIP_INFO;
+
+	typedef struct _DEBUG_EVENT {
+		DWORD dwDebugEventCode;
+		DWORD dwProcessId;
+		DWORD dwThreadId;
+		[switch_is(dwDebugEventCode)] union {
+			[case(EXCEPTION_DEBUG_EVENT)] EXCEPTION_DEBUG_INFO Exception;
+			[case(CREATE_THREAD_DEBUG_EVENT)] CREATE_THREAD_DEBUG_INFO CreateThread;
+			[case(CREATE_PROCESS_DEBUG_EVENT)] CREATE_PROCESS_DEBUG_INFO CreateProcessInfo;
+			[case(EXIT_THREAD_DEBUG_EVENT)] EXIT_THREAD_DEBUG_INFO ExitThread;
+			[case(EXIT_PROCESS_DEBUG_EVENT)] EXIT_PROCESS_DEBUG_INFO ExitProcess;
+			[case(LOAD_DLL_DEBUG_EVENT)] LOAD_DLL_DEBUG_INFO LoadDll;
+			[case(UNLOAD_DLL_DEBUG_EVENT)] UNLOAD_DLL_DEBUG_INFO UnloadDll;
+			[case(OUTPUT_DEBUG_STRING_EVENT)] OUTPUT_DEBUG_STRING_INFO DebugString;
+			[case(RIP_EVENT)] RIP_INFO RipInfo;
+		} u;
+	} DEBUG_EVENT, *LPDEBUG_EVENT;
+
+	BOOL rpcWaitForDebugEvent(
+		[ptr] LPDEBUG_EVENT lpDebugEvent, 
+		DWORD dwMilliseconds);
+
+	BOOL rpcWriteProcessMemory(
+		HANDLE hProcess,
+		LPVOID lpBaseAddress,
+		[in, size_is(nSize)] BYTE lpBuffer[*],
+		[in] DWORD nSize,
+		[ptr] LPDWORD lpNumberOfBytesWritten);
+
+
+	BOOL rpcDebugActiveProcess(DWORD dwProcessId);
+
+	BOOL rpcContinueDebugEvent(
+		DWORD dwProcessId,
+		DWORD dwThreadId,
+		DWORD dwContinueStatus);
+
+	BOOL rpcGetThreadContext(
+		HANDLE hThread,
+		[ptr] LPCONTEXT lpContext);
+
+	BOOL rpcGetThreadSelectorEntry(
+		HANDLE hThread,
+		DWORD dwSelector,
+		[ptr] LPLDT_ENTRY lpSelectorEntry);
+
+
+	BOOL rpcReadProcessMemory(
+		HANDLE hProcess,
+		const LPVOID lpBaseAddress,
+		[in, size_is(nSize)] BYTE lpBuffer[*],
+		[in] DWORD nSize,
+		[ptr] LPDWORD lpNumberOfBytesRead);
+
+	BOOL rpcSetThreadContext(
+		HANDLE hThread,
+		[in, ptr] const CONTEXT *lpContext);
+
+	BOOL rpcCreateProcessA(
+		LPCSTR lpApplicationName,
+		LPSTR lpCommandLine,
+		[in, ptr] LPSECURITY_ATTRIBUTES lpProcessAttributes,
+		[in, ptr] LPSECURITY_ATTRIBUTES lpThreadAttributes,
+		BOOL bInheritHandles,
+		DWORD dwCreationFlags,
+		DWORD dwEnvSize,
+		[size_is(dwEnvSize)] BYTE lpEnvironment[*],
+		LPCSTR lpCurrentDirectory,
+		[ptr] LPSTARTUPINFOA lpStartupInfo,
+		[ptr] LPPROCESS_INFORMATION lpProcessInformation,
+		[ptr] DWORD *lpdwHandled);
+
+	BOOL rpcCloseHandle(
+		HANDLE hObject,
+		[ptr] DWORD *dwHandled);
+
+	HANDLE rpcOpenProcess(
+		DWORD dwDesiredAccess, 
+		BOOL bInheritHandle,
+		DWORD dwProcessId, 
+		[ptr] DWORD *dwHandled);
+}
